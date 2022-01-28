@@ -71,5 +71,6 @@ jobs:
           port: 21
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./src/
+          local-dir: ${{ inputs.local_dir }}
+          server-dir: ${{ inputs.server_dir }}
           # Requires secrets to be added to the repo (Settings > Secrets)
