@@ -1,0 +1,69 @@
+name: Deploying to staging
+
+on:
+  workflow_call:
+    inputs:
+      composer:
+        default: false
+        type: boolean
+      composer-tests:
+        default: false
+        type: boolean
+      npm:
+        default: false
+        type: boolean
+      local_dir:
+        default: './'
+        type: string
+      server_dir:
+        default: './'
+        type: string
+    secrets:
+      STAGING_SERVER_IP:
+        required: true
+      STAGING_FTP_USERNAME:
+        required: true
+      STAGING_FTP_PASSWORD:
+        required: true
+        
+jobs:
+  deploy:
+    name: Run tests and deploy to staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup PHP with PECL extension
+        uses: shivammathur/setup-php@v2
+        if: ${{ inputs.composer }}
+        with:
+          php-version: "7.4"
+          extensions: fileinfo
+      - name: Validate composer.json and composer.lock
+        if: ${{ inputs.composer }}
+        run: composer validate --strict
+      - name: Cache Composer dependencies
+        id: composer-cache
+        uses: actions/cache@v2
+        if: ${{ inputs.composer }}
+        with:
+          path: vendor
+          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+      - name: Install dependencies
+        if: ${{ inputs.composer && inputs.composer-tests }}
+        run: composer install --prefer-dist --no-progress
+      - name: Run linting
+        if: ${{ inputs.composer && inputs.composer-tests }}
+        run: composer lint:errors
+      - name: Install dependencies
+        if: ${{ inputs.composer }}
+        run: composer install --no-dev --optimize-autoloader --no-progress
+      - name: FTP-Deploy-Action
+        uses: SamKirkland/FTP-Deploy-Action@4.2.0
+        with:
+          server: ${{ secrets.STAGING_SERVER_IP }}
+          port: 21
+          username: ${{ secrets.STAGING_FTP_USERNAME }}
+          password: ${{ secrets.STAGING_FTP_PASSWORD }}
+          local-dir: ${{ inputs.local_dir }}
+          server-dir: ${{ inputs.server_dir }}
+          # Requires secrets to be added to the repo (Settings > Secrets)
