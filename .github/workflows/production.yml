@@ -41,28 +41,28 @@ jobs:
           ref: ${{ steps.latestrelease.outputs.releasetag }}
       - name: Setup PHP with PECL extension
         uses: shivammathur/setup-php@v2
-        if: ${{ composer }}
+        if: ${{ inputs.composer }}
         with:
           php-version: "7.4"
           extensions: fileinfo
       - name: Validate composer.json and composer.lock
-        if: ${{ composer }}
+        if: ${{ inputs.composer }}
         run: composer validate --strict
       - name: Cache Composer dependencies
         id: composer-cache
         uses: actions/cache@v2
-        if: ${{ composer }}
+        if: ${{ inputs.composer }}
         with:
           path: vendor
           key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
       - name: Install dependencies
-        if: ${{ composer && composer-tests }}
+        if: ${{ inputs.composer && inputs.composer-tests }}
         run: composer install --prefer-dist --no-progress
       - name: Run linting
-        if: ${{ composer && composer-tests }}
+        if: ${{ inputs.composer && inputs.composer-tests }}
         run: composer lint:errors
       - name: Install dependencies
-        if: ${{ composer }}
+        if: ${{ inputs.composer }}
         run: composer install --no-dev --optimize-autoloader --no-progress
       - name: FTP-Deploy-Action
         uses: SamKirkland/FTP-Deploy-Action@4.2.0
